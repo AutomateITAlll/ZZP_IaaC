@@ -1,29 +1,35 @@
 # Setting up GitHub Actions with Azure
 
-This guide provides instructions on how to set up GitHub Actions to deploy Azure resources.
+This guide provides instructions on how to set up GitHub Actions to deploy Azure resources using Federated Identity Credentials (OIDC).
 
-## Create a Service Principal
+## Setting up OIDC Authentication with Azure
 
-To allow GitHub Actions to deploy resources to your Azure subscription, you need to create a Service Principal with appropriate permissions:
+The OpenID Connect (OIDC) approach is more secure as it doesn't require storing long-lived secrets in your GitHub repository.
 
-```bash
-az ad sp create-for-rbac --name "github-actions-sp" --role contributor --scopes /subscriptions/{subscription-id}/resourceGroups/zzp2025
+### 1. Create an Azure AD Application and Service Principal
+
+```powershell
+# Create the Azure AD application and service principal
+$appName = "github-actions-oidc"
+$app = az ad app create --display-name $appName | ConvertFrom-Json
+$sp = az ad sp create --id $app.appId | ConvertFrom-Json
+
+# Assign contributor role to the service principal for your resource group
+az role assignment create --role contributor --subscription $subscriptionId --assignee-object-id $sp.id --assignee-principal-type ServicePrincipal --scope /subscriptions/{subscription-id}/resourceGroups/zzp2025
 ```
 
-Replace `{subscription-id}` with your actual Azure subscription ID.
+### 2. Configure Federated Identity Credentials
 
-The command will output a JSON object similar to:
+```powershell
+# Get your GitHub organization and repository name
+$githubOrg = "your-github-org"
+$githubRepo = "your-github-repo"
 
-```json
-{
-  "appId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-  "displayName": "github-actions-sp",
-  "password": "your-client-secret",
-  "tenant": "tttttttt-tttt-tttt-tttt-tttttttttttt"
-}
+# Create a credential for GitHub Actions
+az ad app federated-credential create --id $app.id --parameters "{\"name\":\"github-actions\",\"issuer\":\"https://token.actions.githubusercontent.com\",\"subject\":\"repo:$githubOrg/$githubRepo:ref:refs/heads/main\",\"audiences\":[\"api://AzureADTokenExchange\"]}"
 ```
 
-## Add the Service Principal details to GitHub Secrets
+### 3. Add the required secrets to GitHub
 
 1. Go to your GitHub repository
 2. Navigate to Settings > Secrets and variables > Actions
@@ -31,39 +37,57 @@ The command will output a JSON object similar to:
 
    a. Click on "New repository secret"
       - Name: `AZURE_CLIENT_ID`
-      - Value: The `appId` value from the service principal creation output
+      - Value: The application ID from the created app (run `echo $app.appId`)
       - Click "Add secret"
 
    b. Click on "New repository secret"
-      - Name: `AZURE_CLIENT_SECRET`
-      - Value: The `password` value from the service principal creation output
+      - Name: `AZURE_TENANT_ID`
+      - Value: Your Azure tenant ID (run `az account show --query tenantId -o tsv`)
       - Click "Add secret"
 
    c. Click on "New repository secret"
-      - Name: `AZURE_TENANT_ID`
-      - Value: The `tenant` value from the service principal creation output
+      - Name: `AZURE_SUBSCRIPTION_ID`
+      - Value: Your Azure subscription ID (run `az account show --query id -o tsv`)
       - Click "Add secret"
 
-   d. Click on "New repository secret"
-      - Name: `AZURE_SUBSCRIPTION_ID`
-      - Value: Your Azure subscription ID
-      - Click "Add secret"
+## Workflow File Configuration
+
+The workflow files are already set up with the necessary permissions:
+
+```yaml
+permissions:
+  id-token: write
+  contents: read
+```
+
+And the login step is configured to use OIDC:
+
+```yaml
+- name: Login to Azure
+  uses: azure/login@v1
+  with:
+    client-id: ${{ secrets.AZURE_CLIENT_ID }}
+    tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+    subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    enable-AzPSSession: true
+```
 
 ## Workflow File Structure
 
 The GitHub Actions workflow file (`.github/workflows/azure-function-deploy.yml`) does the following:
 
 1. Triggers on pushes to the main branch or manual workflow dispatch
-2. Sets environment variables for resource group and location
-3. Checks out the code repository
-4. Sets up Node.js
-5. Logs in to Azure using individual client credentials (Client ID, Client Secret, Tenant ID, and Subscription ID)
-6. Checks if the resource group exists and creates it if needed
-7. Deploys the Bicep template
-8. Gets the function app name from the deployment outputs
-9. Packages the function app code
-10. Deploys the function app code
-11. Logs out from Azure
+2. Sets required permissions for OIDC authentication
+3. Sets environment variables for resource group and location
+4. Checks out the code repository
+5. Sets up Node.js
+6. Logs in to Azure using OIDC authentication
+7. Checks if the resource group exists and creates it if needed
+8. Deploys the Bicep template
+9. Gets the function app name from the deployment outputs
+10. Packages the function app code
+11. Deploys the function app code
+12. Logs out from Azure
 
 ## Monitoring Deployments
 
