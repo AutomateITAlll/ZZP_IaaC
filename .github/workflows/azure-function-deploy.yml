@@ -46,7 +46,7 @@ jobs:
         uses: azure/arm-deploy@v1
         with:
           resourceGroupName: ${{ env.AZURE_RESOURCE_GROUP }}
-          template: ./infra/main.bicep
+          template: ./infra/main35.bicep
           parameters: ./infra/parameters.json
 
       - name: Get function app name
