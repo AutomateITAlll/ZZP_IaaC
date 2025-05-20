@@ -23,14 +23,11 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18.x'          
+          node-version: '18.x'            
       - name: Login to Azure
         uses: azure/login@v1
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Check if resource group exists
         id: check-rg
@@ -60,9 +57,7 @@ jobs:
 
       - name: Package function app
         run: |
-          zip -r function.zip ./src/*
-
-      - name: Deploy function code
+          zip -r function.zip ./src/*      - name: Deploy function code
         run: |
           az functionapp deployment source config-zip \
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
