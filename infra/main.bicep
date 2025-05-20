@@ -1,5 +1,5 @@
 @description('The name of the function app that you wish to create.')
-param appName string = 'zzpfunc${uniqueString(resourceGroup().id)}'
+param appName string = 'ASASASASASASAS1'
 
 @description('Storage Account type')
 @allowed([

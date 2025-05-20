@@ -52,8 +52,7 @@ jobs:
       - name: Get function app name
         id: get-function-app-name
         run: |
-          functionAppName=$(az deployment group show --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ steps.deploy-bicep.outputs.deploymentName }} --query properties.outputs.functionAppName.value -o tsv)
-          echo "::set-output name=functionAppName::$functionAppName"
+          echo "::set-output name=ASASASASASASAS1"
 
       - name: Package function app
         run: |
