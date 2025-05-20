@@ -1,0 +1,49 @@
+# Local development
+local.settings.json
+*.zip
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+.history/
+
+# Azure Functions artifacts
+bin/
+obj/
+appsettings.json
+node_modules/
+
+# Local Azure Storage Emulator
+__blobstorage__
+__queuestorage__
+__tablestorage__
+
+# Azurite artifacts
+__azurite_db*__.json
+.azurite/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
